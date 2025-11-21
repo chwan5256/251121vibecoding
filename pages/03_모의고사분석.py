@@ -22,9 +22,8 @@ st.markdown("""
         padding: 15px;
         margin-bottom: 10px;
     }
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 2px;
-    }
+    /* 탭 스타일 */
+    .stTabs [data-baseweb="tab-list"] { gap: 2px; }
     .stTabs [data-baseweb="tab"] {
         height: 50px;
         white-space: pre-wrap;
@@ -56,11 +55,11 @@ uploaded_files = st.sidebar.file_uploader(
 # --- 함수 정의 ---
 
 def extract_exam_name(filename):
-    """파일명에서 'N월' 또는 파일명 자체를 추출하여 시험 구분자로 사용"""
+    """파일명에서 'N월' 또는 파일명 자체를 추출"""
     match = re.search(r'(\d+)월', filename)
     if match:
         return f"{match.group(1)}월"
-    return filename.split('.')[0] # 'N월'이 없으면 파일명 사용
+    return filename.split('.')[0]
 
 def load_single_file(file):
     """단일 파일 전처리 함수"""
@@ -71,7 +70,6 @@ def load_single_file(file):
     except Exception as e:
         return None
 
-    # 컬럼 매핑
     new_columns = [
         '석차', '학번', '성명',
         '국어_선택', '국어_점수',
@@ -84,29 +82,24 @@ def load_single_file(file):
         '국수영_합계', '국수영_석차'
     ]
     
-    # 컬럼 수 맞추기
     current_cols = len(df.columns)
     if current_cols >= len(new_columns):
         df.columns = new_columns + [f"col_{i}" for i in range(current_cols - len(new_columns))]
     else:
         df.columns = new_columns[:current_cols]
 
-    # 숫자 변환
     numeric_cols = ['국어_점수', '수학_점수', '영어_점수', '탐구1_점수', '탐구2_점수', '총점_국수탐', '전체_석차']
     for col in numeric_cols:
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors='coerce')
 
-    # 학번, 반 추출
     if '학번' in df.columns:
         df['학번'] = df['학번'].fillna(0).astype(int).astype(str)
         df['반'] = df['학번'].apply(lambda x: x[1:3] if len(x) == 5 else '기타')
     
-    # 시험명 추가 (파일명 기반)
     exam_name = extract_exam_name(file.name)
     df['시험명'] = exam_name
     
-    # 시험 순서 정렬을 위한 월 숫자 추출
     month_match = re.search(r'(\d+)', exam_name)
     df['월_숫자'] = int(month_match.group(1)) if month_match else 99
     
@@ -125,7 +118,6 @@ def process_all_files(files):
         return None
         
     final_df = pd.concat(all_dfs, ignore_index=True)
-    # 월별로 정렬 (3월 -> 6월 -> 9월)
     final_df = final_df.sort_values(by=['월_숫자', '반', '학번'])
     return final_df
 
@@ -138,31 +130,27 @@ def convert_df_to_excel(df):
 # --- 메인 로직 ---
 
 if uploaded_files:
-    # 1. 데이터 통합 로드
     main_df = process_all_files(uploaded_files)
 
     if main_df is not None:
-        # 업로드된 시험 목록 확인
         exam_list = sorted(main_df['시험명'].unique(), key=lambda x: int(re.search(r'(\d+)', x).group(1)) if re.search(r'(\d+)', x) else 99)
-        last_exam = exam_list[-1] # 가장 최근 시험
         
-        st.success(f"✅ 총 {len(uploaded_files)}개의 파일이 통합되었습니다: {', '.join(exam_list)}")
+        st.success(f"✅ 총 {len(uploaded_files)}개의 데이터 통합 완료: {', '.join(exam_list)}")
 
         # 탭 구성
         tabs = st.tabs([
-            "📈 성적 변화 추이(Trend)",
-            "📊 최근 시험 분석", 
+            "📈 성적 추이(Trend)",
+            "🚨 변동폭 분석(Who Changed?)",  # NEW FEATURE
+            "📊 시험 상세 분석", 
             "🏫 반별 비교", 
             "🔍 탐구 분석", 
-            "👤 학생 개별 조회"
+            "👤 학생 조회"
         ])
 
-        # --- [Tab 1] 성적 변화 추이 (핵심 기능) ---
+        # --- [Tab 1] 성적 변화 추이 ---
         with tabs[0]:
             st.header("📉 학생별/학급별 성적 변화 추적")
-            
-            # 모드 선택: 학생별 vs 반별
-            trend_mode = st.radio("분석 모드 선택", ["학생 개인별 추이", "반별 평균 추이"], horizontal=True)
+            trend_mode = st.radio("분석 모드", ["학생 개인별 추이", "반별 평균 추이"], horizontal=True)
 
             if trend_mode == "학생 개인별 추이":
                 col_search, _ = st.columns([1, 2])
@@ -173,70 +161,120 @@ if uploaded_files:
                     student_data = main_df[main_df['성명'].str.contains(search_name)].sort_values('월_숫자')
                     
                     if len(student_data) > 0:
-                        # 학생 정보 표시 (가장 최근 데이터 기준)
                         recent_info = student_data.iloc[-1]
-                        st.subheader(f"🧑‍🎓 {recent_info['성명']} ({recent_info['반']}반) 학생의 성적 변화")
+                        st.subheader(f"🧑‍🎓 {recent_info['성명']} ({recent_info['반']}반) 성적 히스토리")
                         
-                        # 라인 차트 그리기
                         fig_trend = go.Figure()
-                        
-                        # 주요 과목 추가
                         subjects = {'국어_점수': 'red', '수학_점수': 'blue', '영어_점수': 'green', '총점_국수탐': 'black'}
                         for subj, color in subjects.items():
                             fig_trend.add_trace(go.Scatter(
-                                x=student_data['시험명'], 
-                                y=student_data[subj],
-                                mode='lines+markers',
-                                name=subj.split('_')[0],
+                                x=student_data['시험명'], y=student_data[subj],
+                                mode='lines+markers', name=subj.split('_')[0],
                                 line=dict(color=color, width=3 if subj=='총점_국수탐' else 1)
                             ))
-                        
-                        fig_trend.update_layout(
-                            title="시험별 주요 과목 원점수 변화",
-                            xaxis_title="시험",
-                            yaxis_title="점수",
-                            hovermode="x unified"
-                        )
+                        fig_trend.update_layout(hovermode="x unified")
                         st.plotly_chart(fig_trend, use_container_width=True)
                         
-                        # 데이터 테이블
-                        st.write("📋 상세 점수표")
+                        # 오류 방지를 위한 스타일 적용
                         display_cols = ['시험명', '국어_점수', '수학_점수', '영어_점수', '탐구1_점수', '탐구2_점수', '총점_국수탐', '전체_석차']
-                        st.dataframe(student_data[display_cols].style.background_gradient(subset=['총점_국수탐'], cmap='Blues'))
-                        
+                        st_data = student_data[display_cols]
+                        try:
+                            st.dataframe(st_data.style.background_gradient(subset=['총점_국수탐'], cmap='Blues'))
+                        except ImportError:
+                            # matplotlib 없을 경우 스타일 없이 출력
+                            st.dataframe(st_data)
                     else:
                         st.warning("검색 결과가 없습니다.")
-                else:
-                    st.info("이름을 입력하면 해당 학생의 월별 성적 그래프가 나타납니다.")
 
             else: # 반별 평균 추이
                 class_trend = main_df.groupby(['시험명', '월_숫자', '반'])['총점_국수탐'].mean().reset_index()
                 class_trend = class_trend.sort_values('월_숫자')
-                
-                fig_class_trend = px.line(
-                    class_trend, 
-                    x='시험명', 
-                    y='총점_국수탐', 
-                    color='반',
-                    markers=True,
-                    title="반별 국수탐 총점 평균 변화 추이"
-                )
+                fig_class_trend = px.line(class_trend, x='시험명', y='총점_국수탐', color='반', markers=True)
                 st.plotly_chart(fig_class_trend, use_container_width=True)
 
-        # --- [Tab 2] 최근 시험 분석 ---
+        # --- [Tab 2] 변동폭 분석 (Who Changed?) - NEW ---
         with tabs[1]:
-            st.header(f"📊 {last_exam} 상세 분석 (최신)")
+            st.header("🚨 Who Changed? (성적 급변동 학생 추적)")
             
-            # 가장 최근 시험 데이터만 필터링
+            if len(exam_list) < 2:
+                st.warning("⚠️ 변동폭을 분석하려면 최소 2개 이상의 시험 데이터가 필요합니다.")
+            else:
+                # 비교할 두 시험 선택
+                col_c1, col_c2 = st.columns(2)
+                with col_c1:
+                    exam_base = st.selectbox("기준 시험 (이전)", exam_list, index=len(exam_list)-2)
+                with col_c2:
+                    exam_curr = st.selectbox("비교 시험 (최근)", exam_list, index=len(exam_list)-1)
+                
+                if exam_base == exam_curr:
+                    st.error("서로 다른 시험을 선택해주세요.")
+                else:
+                    # 데이터 준비 및 병합
+                    df_base = main_df[main_df['시험명'] == exam_base][['학번', '성명', '반', '국어_점수', '수학_점수', '총점_국수탐']]
+                    df_curr = main_df[main_df['시험명'] == exam_curr][['학번', '성명', '반', '국어_점수', '수학_점수', '총점_국수탐']]
+                    
+                    merged = pd.merge(df_curr, df_base, on=['학번', '성명', '반'], suffixes=('_최근', '_이전'))
+                    
+                    # 변동폭 계산
+                    merged['총점_변동'] = merged['총점_국수탐_최근'] - merged['총점_국수탐_이전']
+                    merged['국어_변동'] = merged['국어_점수_최근'] - merged['국어_점수_이전']
+                    merged['수학_변동'] = merged['수학_점수_최근'] - merged['수학_점수_이전']
+
+                    st.divider()
+
+                    # 1. 슬럼프 경보 (총점 30점 이상 하락)
+                    st.subheader("📉 슬럼프 경보 (총점 -30점 이상)")
+                    slump_students = merged[merged['총점_변동'] <= -30].sort_values('총점_변동')
+                    if not slump_students.empty:
+                        st.dataframe(slump_students[['반', '성명', '총점_변동', '국어_변동', '수학_변동', '총점_국수탐_최근']])
+                    else:
+                        st.info("해당하는 학생이 없습니다. 다행이네요!")
+
+                    st.divider()
+
+                    # 2. 노력상 후보 (총점 상승 Top 5)
+                    st.subheader("🏆 노력상 후보 (성적 급상승 Top 5)")
+                    rising_students = merged.sort_values('총점_변동', ascending=False).head(5)
+                    if not rising_students.empty:
+                        # 보기 좋게 컬럼 정리
+                        st.table(rising_students[['반', '성명', '총점_변동', '총점_국수탐_이전', '총점_국수탐_최근']])
+
+                    st.divider()
+
+                    # 3. 과목 편식 확인 (수학 상승 & 국어 하락)
+                    st.subheader("⚖️ 과목 불균형 (수학⬆️ 국어⬇️)")
+                    st.markdown("**조건:** 수학은 5점 이상 올랐는데, 국어는 5점 이상 떨어진 학생")
+                    
+                    imbalance_students = merged[(merged['수학_변동'] >= 5) & (merged['국어_변동'] <= -5)]
+                    
+                    if not imbalance_students.empty:
+                        fig_imb = px.scatter(
+                            imbalance_students, 
+                            x='국어_변동', 
+                            y='수학_변동', 
+                            text='성명',
+                            color='반',
+                            title="국어 하락 vs 수학 상승 분포",
+                            labels={'국어_변동': '국어 점수 변동', '수학_변동': '수학 점수 변동'}
+                        )
+                        fig_imb.add_hline(y=0, line_dash="dash", line_color="gray")
+                        fig_imb.add_vline(x=0, line_dash="dash", line_color="gray")
+                        st.plotly_chart(fig_imb, use_container_width=True)
+                        st.dataframe(imbalance_students[['반', '성명', '수학_변동', '국어_변동', '총점_변동']])
+                    else:
+                        st.info("해당 조건의 학생이 없습니다.")
+
+        # --- [Tab 3] 최근 시험 상세 분석 ---
+        with tabs[2]:
+            last_exam = exam_list[-1]
+            st.header(f"📊 {last_exam} 상세 분석")
             latest_df = main_df[main_df['시험명'] == last_exam]
             
-            col1, col2, col3, col4 = st.columns(4)
+            col1, col2, col3 = st.columns(3)
             col1.metric("응시 인원", f"{len(latest_df)}명")
             col2.metric("전체 평균(국수탐)", f"{latest_df['총점_국수탐'].mean():.1f}점")
             col3.metric("수학 1등급 컷(4%)", f"{latest_df['수학_점수'].quantile(0.96):.0f}점")
-            col4.metric("영어 1등급 비율", f"{(latest_df[latest_df['영어_점수'] >= 90].shape[0] / len(latest_df) * 100):.1f}%")
 
-            # 상관관계 산점도
             fig_scatter = px.scatter(
                 latest_df, x='국어_점수', y='수학_점수', color='탐구1_과목',
                 size='총점_국수탐', hover_data=['성명', '반'],
@@ -244,58 +282,39 @@ if uploaded_files:
             )
             st.plotly_chart(fig_scatter, use_container_width=True)
 
-        # --- [Tab 3] 반별 비교 ---
-        with tabs[2]:
+        # --- [Tab 4] 반별 비교 ---
+        with tabs[3]:
             st.header("🏫 반별 성적 비교")
-            # 전체 데이터 or 최근 데이터 선택 가능하게
             compare_target = st.selectbox("비교 대상 시험", exam_list, index=len(exam_list)-1)
             target_df = main_df[main_df['시험명'] == compare_target]
             
             class_avg = target_df.groupby('반')[['국어_점수', '수학_점수', '영어_점수', '총점_국수탐']].mean().reset_index()
-            
-            fig_bar = px.bar(
-                class_avg, x='반', y=['국어_점수', '수학_점수', '영어_점수'],
-                barmode='group', title=f"{compare_target} 반별 평균 비교"
-            )
+            fig_bar = px.bar(class_avg, x='반', y=['국어_점수', '수학_점수', '영어_점수'], barmode='group', title=f"{compare_target} 반별 평균")
             st.plotly_chart(fig_bar, use_container_width=True)
 
-        # --- [Tab 4] 탐구 분석 ---
-        with tabs[3]:
-            st.header("🔍 탐구 과목 선택 및 유불리")
-            target_exam_tamgu = st.selectbox("분석할 시험 선택", exam_list, index=len(exam_list)-1, key='tamgu_exam')
+        # --- [Tab 5] 탐구 분석 ---
+        with tabs[4]:
+            st.header("🔍 탐구 과목 선택 분석")
+            target_exam_tamgu = st.selectbox("분석할 시험", exam_list, index=len(exam_list)-1, key='tamgu_select')
             tamgu_df_target = main_df[main_df['시험명'] == target_exam_tamgu]
             
-            # 탐구 데이터 전처리 (Long format)
             t1 = tamgu_df_target[['탐구1_과목', '총점_국수탐']].rename(columns={'탐구1_과목': '탐구과목'})
             t2 = tamgu_df_target[['탐구2_과목', '총점_국수탐']].rename(columns={'탐구2_과목': '탐구과목'})
             tamgu_long = pd.concat([t1, t2]).dropna()
             
             tamgu_stats = tamgu_long.groupby('탐구과목')['총점_국수탐'].agg(['mean', 'count']).sort_values('mean', ascending=False).reset_index()
-
-            fig_tamgu = px.bar(
-                tamgu_stats, x='탐구과목', y='mean', color='mean',
-                text='count',
-                title=f"{target_exam_tamgu} 탐구 과목별 응시자 총점 평균 (막대 위 숫자: 응시자 수)",
-                labels={'mean': '국수탐 총점 평균', 'count': '응시자 수'}
-            )
+            
+            fig_tamgu = px.bar(tamgu_stats, x='탐구과목', y='mean', color='mean', text='count', title="탐구 과목별 총점 평균")
             st.plotly_chart(fig_tamgu, use_container_width=True)
 
-        # --- [Tab 5] 학생 조회 및 다운로드 ---
-        with tabs[4]:
-            st.header("👤 학생 통합 조회 및 데이터 다운로드")
-            
-            # 엑셀 다운로드
-            st.markdown("### 📥 전체 데이터 다운로드")
+        # --- [Tab 6] 학생 조회 ---
+        with tabs[5]:
+            st.header("👤 통합 데이터 다운로드")
             excel_data = convert_df_to_excel(main_df)
-            st.download_button(
-                label="전체 통합 데이터 엑셀 다운로드",
-                data=excel_data,
-                file_name='total_grade_analysis.xlsx',
-                mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-            )
+            st.download_button("전체 데이터 엑셀 다운로드", excel_data, 'total_grade_analysis.xlsx')
 
     else:
-        st.error("데이터 처리에 실패했습니다. 파일 형식을 확인해주세요.")
+        st.error("데이터 처리에 실패했습니다.")
 
 else:
-    st.info("👈 사이드바에서 분석할 CSV 파일들을 업로드해주세요. (여러 개 선택 가능)")
+    st.info("👈 사이드바에서 분석할 CSV 파일들을 업로드해주세요.")
