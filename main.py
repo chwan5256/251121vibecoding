@@ -1,111 +1,142 @@
 import streamlit as st
 
-# 1. 페이지 기본 설정 (탭 이름, 아이콘)
+# 1. 페이지 기본 설정 (탭 제목 및 아이콘)
 st.set_page_config(
-    page_title="MBTI 문학 소믈리에",
-    page_icon="📚",
+    page_title="MBTI 진로 나침반",
+    page_icon="🧭",
     layout="centered"
 )
 
-# 2. CSS 스타일링 (타이틀 폰트 및 여백 조정)
+# 2. CSS로 간단한 스타일링 (폰트 및 여백 조정)
 st.markdown("""
     <style>
-    .main-header {
-        font-size: 2.5rem;
-        font-weight: 700;
-        color: #4A4A4A;
-        text-align: center;
-        margin-bottom: 1rem;
+    .main {
+        color: #333333;
     }
-    .sub-text {
-        font-size: 1.1rem;
-        color: #666;
-        text-align: center;
-        margin-bottom: 2rem;
-    }
-    .book-card {
-        background-color: #f9f9f9;
-        padding: 20px;
-        border-radius: 15px;
-        border-left: 5px solid #FF6B6B;
-        box-shadow: 2px 2px 10px rgba(0,0,0,0.1);
-    }
-    .quote-box {
-        font-style: italic;
-        color: #2C3E50;
-        background-color: #E8F6F3;
-        padding: 15px;
+    .stSelectbox > div > div {
+        background-color: #f0f2f6;
         border-radius: 10px;
-        margin-top: 10px;
-        text-align: center;
+    }
+    h1 {
+        color: #4F8BF9;
     }
     </style>
     """, unsafe_allow_html=True)
 
-# 3. 데이터 (MBTI별 추천 도서 매핑)
-mbti_books = {
-    # 분석가형 (INTJ, INTP, ENTJ, ENTP)
-    "INTJ": {"book": "1984", "author": "조지 오웰", "emoji": "👁️", "desc": "치밀한 전략가인 당신에게, 시스템과 통제에 대한 날카로운 통찰을 주는 책.", "quote": "자유란 2 더하기 2가 4라고 말할 수 있는 자유이다."},
-    "INTP": {"book": "월든", "author": "헨리 데이비드 소로", "emoji": "🌿", "desc": "사색과 논리를 사랑하는 당신, 숲속에서의 고독과 철학적 사유를 즐겨보세요.", "quote": "내가 숲으로 들어간 것은 인생을 의도적으로 살아보기 위해서였다."},
-    "ENTJ": {"book": "군주론", "author": "마키아벨리", "emoji": "👑", "desc": "대담한 통솔자인 당신에게, 리더십의 본질과 현실적인 권력을 다룬 고전.", "quote": "사랑받는 것보다 두려움의 대상이 되는 것이 훨씬 안전하다."},
-    "ENTP": {"book": "돈키호테", "author": "세르반테스", "emoji": "⚔️", "desc": "뜨거운 논쟁과 모험을 즐기는 당신, 현실에 안주하지 않는 기사의 열정을 만나보세요.", "quote": "이룩할 수 없는 꿈을 꾸고, 이루어질 수 없는 사랑을 하고..."},
-
-    # 외교관형 (INFJ, INFP, ENFJ, ENFP)
-    "INFJ": {"book": "데미안", "author": "헤르만 헤세", "emoji": "🐣", "desc": "깊은 통찰력을 지닌 당신, 내면의 자아를 찾아가는 치열한 여정에 공감할 거예요.", "quote": "새는 알을 깨고 나오려 투쟁한다. 알은 세계이다."},
-    "INFP": {"book": "어린 왕자", "author": "생텍쥐페리", "emoji": "🦊", "desc": "이상주의적이고 낭만적인 당신에게, 보이지 않는 것의 소중함을 일깨워주는 책.", "quote": "가장 중요한 것은 눈에 보이지 않아."},
-    "ENFJ": {"book": "레 미제라블", "author": "빅토르 위고", "emoji": "🇫🇷", "desc": "정의롭고 이타적인 당신, 인간에 대한 뜨거운 사랑과 혁명의 서사를 추천합니다.", "quote": "사랑하는 것은 신의 얼굴을 보는 것이다."},
-    "ENFP": {"book": "빨강 머리 앤", "author": "루시 모드 몽고메리", "emoji": "👒", "desc": "재기발랄한 활동가인 당신! 긍정과 상상력으로 세상을 물들이는 앤과 찰떡궁합.", "quote": "세상은 생각대로 되지 않는다고요? 하지만 생각대로 되지 않는다는 건 정말 멋져요!"},
-
-    # 관리자형 (ISTJ, ISFJ, ESTJ, ESFJ)
-    "ISTJ": {"book": "오만과 편견", "author": "제인 오스틴", "emoji": "📜", "desc": "사실과 원칙을 중시하는 당신, 섬세한 감정선과 이성적 판단 사이의 균형을 느껴보세요.", "quote": "편견은 내가 다른 사람을 사랑하지 못하게 하고, 오만은 다른 사람이 나를 사랑할 수 없게 만든다."},
-    "ISFJ": {"book": "작은 아씨들", "author": "루이자 메이 올콧", "emoji": "🧶", "desc": "성실하고 따뜻한 수호자인 당신에게 가족애와 성장의 따스함을 선물합니다.", "quote": "우리의 짐은 우리가 짊어질 수 있도록 만들어졌다."},
-    "ESTJ": {"book": "동물농장", "author": "조지 오웰", "emoji": "🐷", "desc": "엄격한 관리자인 당신, 조직과 사회의 규율이 어떻게 변질될 수 있는지 꿰뚫어보세요.", "quote": "모든 동물은 평등하다. 하지만 어떤 동물은 다른 동물보다 더욱 평등하다."},
-    "ESFJ": {"book": "위대한 개츠비", "author": "F. 스콧 피츠제럴드", "emoji": "🥂", "desc": "사교적이고 헌신적인 당신, 화려함 속에 감춰진 인간의 고독과 사랑을 만나보세요.", "quote": "우리는 조류를 거스르는 배처럼 끊임없이 과거로 떠밀려 가면서도 앞으로 나아가는 것이다."},
-
-    # 탐험가형 (ISTP, ISFP, ESTP, ESFP)
-    "ISTP": {"book": "노인과 바다", "author": "어니스트 헤밍웨이", "emoji": "🦈", "desc": "만능 재주꾼인 당신, 군더더기 없는 문체와 묵묵한 사투가 주는 강렬함을 느껴보세요.", "quote": "인간은 파괴될 수는 있어도 패배할 수는 없다."},
-    "ISFP": {"book": "달과 6펜스", "author": "서머싯 몸", "emoji": "🎨", "desc": "예술적 감각이 넘치는 당신, 현실(6펜스)을 버리고 꿈(달)을 쫓는 열망에 빠져보세요.", "quote": "나는 그림을 그려야 한다지 않소. 물에 빠지면 헤엄을 잘 치고 못 치고가 문제가 아니오."},
-    "ESTP": {"book": "로빈슨 크루소", "author": "대니얼 디포", "emoji": "🏝️", "desc": "모험을 즐기는 사업가인 당신! 어떤 상황에서도 살아남는 현실적 해결 능력을 확인해보세요.", "quote": "두려움은 위험 그 자체보다도 1만 배는 더 무서운 것이다."},
-    "ESFP": {"book": "톰 소여의 모험", "author": "마크 트웨인", "emoji": "🛶", "desc": "자유로운 영혼의 연예인인 당신에게, 규율에 얽매이지 않는 유쾌한 모험을 추천합니다.", "quote": "일을 놀이처럼 하면 인생은 끝없는 즐거움이 된다."}
+# 3. MBTI 데이터베이스 (성격 키워드 + 추천 진로 3가지)
+mbti_data = {
+    "ISTJ": {
+        "desc": "신중하고 철저한 관리자형 | 사실에 근거하여 사고함 🧐",
+        "jobs": ["📊 회계/재무 전문가", "⚖️ 판사 및 법률가", "💻 시스템 관리자"]
+    },
+    "ISFJ": {
+        "desc": "용감한 수호자형 | 성실하고 온화하며 협조적임 🛡️",
+        "jobs": ["🏥 간호사 및 의료인", "🏫 초중등 교사", "📚 사서 및 기록물 관리자"]
+    },
+    "INFJ": {
+        "desc": "통찰력 있는 선지자형 | 사람에 대한 깊은 탐구심 🔮",
+        "jobs": ["🧠 심리 상담가", "✍️ 작가 및 시나리오 작가", "🎨 아트 디렉터"]
+    },
+    "INTJ": {
+        "desc": "용의주도한 전략가형 | 독창적이고 판단력이 냉철함 ♟️",
+        "jobs": ["🔬 자연과학 연구원", "📈 투자 분석가(Quant)", "🤖 AI 개발자"]
+    },
+    "ISTP": {
+        "desc": "만능 재주꾼형 | 도구 사용에 능숙하고 상황 적응력이 높음 🛠️",
+        "jobs": ["✈️ 파일럿 및 항공 전문가", "🕵️ 범죄 수사관", "🏗️ 토목/기계 엔지니어"]
+    },
+    "ISFP": {
+        "desc": "호기심 많은 예술가형 | 온화하고 겸손하며 삶의 여유를 즐김 🎨",
+        "jobs": ["👗 패션 디자이너", "🌿 조경/화훼 전문가", "🩺 수의사"]
+    },
+    "INFP": {
+        "desc": "열정적인 중재자형 | 이상적인 세상을 만들어가는 몽상가 🦋",
+        "jobs": ["🎬 멀티미디어 아티스트", "🗣️ 전문 강사/코치", "🌍 국제기구 활동가"]
+    },
+    "INTP": {
+        "desc": "논리적인 사색가형 | 지적 호기심이 넘치는 아이디어 뱅크 💡",
+        "jobs": ["📐 소프트웨어 아키텍트", "🧪 물리학/천문학자", "📉 경제학자"]
+    },
+    "ESTP": {
+        "desc": "모험을 즐기는 사업가형 | 직설적이고 행동 중심적임 🏎️",
+        "jobs": ["🤝 창업가(CEO)", "🎤 스포츠 에이전트", "🚒 소방관/구조대원"]
+    },
+    "ESFP": {
+        "desc": "자유로운 영혼의 연예인형 | 사교적이고 에너지가 넘침 🎉",
+        "jobs": ["📺 방송 연예인/유튜버", "✈️ 승무원", "🎉 이벤트 기획자"]
+    },
+    "ENFP": {
+        "desc": "재기발랄한 활동가형 | 열정적이고 창의적인 아이디어 뱅크 ✨",
+        "jobs": ["📢 마케팅/홍보 전문가", "📰 저널리스트", "🎭 공연 예술가"]
+    },
+    "ENTP": {
+        "desc": "뜨거운 논쟁을 즐기는 변론가형 | 풍부한 지식과 입담 🗣️",
+        "jobs": ["⚖️ 변호사", "🚀 벤처 투자자", "💡 발명가/혁신가"]
+    },
+    "ESTJ": {
+        "desc": "엄격한 관리자형 | 사무적, 실용적, 현실적임 👔",
+        "jobs": ["🏢 경영 컨설턴트", "👮 경찰/군 장교", "💊 약사"]
+    },
+    "ESFJ": {
+        "desc": "사교적인 외교관형 | 타인을 돕고 조화를 이룸 🤝",
+        "jobs": ["🏨 호텔리어/관광 전문가", "🏥 의료 행정 전문가", "📢 홍보 담당자(PR)"]
+    },
+    "ENFJ": {
+        "desc": "정의로운 사회운동가형 | 카리스마와 충만한 열정 🔥",
+        "jobs": ["🗣️ 정치인/사회운동가", "🏫 교육 행정가", "👥 인사 담당자(HR)"]
+    },
+    "ENTJ": {
+        "desc": "대담한 통솔자형 | 철저한 준비와 활동적인 리더십 🦁",
+        "jobs": ["🏢 기업 임원(Executive)", "💼 경영 컨설턴트", "🏗️ 도시 계획가"]
+    }
 }
 
 # 4. 메인 화면 구성
-st.markdown('<div class="main-header">📚 MBTI 문학 소믈리에</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-text">찬환쌤과 함께하는 나만의 고전 찾기! 당신의 성향을 선택해주세요.</div>', unsafe_allow_html=True)
+st.title("✨ 찬환쌤의 진로 나침반 🧭")
+st.subheader("학생의 성향(MBTI)에 딱 맞는 미래를 찾아보세요!")
+st.markdown("---")
 
-# 5. 사용자 입력 (Selectbox)
-col1, col2, col3 = st.columns([1, 2, 1]) # 중앙 정렬을 위한 컬럼 분할
+# 5. 사용자 입력 (MBTI 선택)
+# 컬럼을 나누어 중앙에 배치하는 느낌을 줌
+col1, col2 = st.columns([1, 2])
+
+with col1:
+    st.image("https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f9d1-200d-1f3eb.png", width=100) # 선생님 이모지
 
 with col2:
+    st.markdown("#### 🏫 학생의 MBTI를 선택해주세요")
     selected_mbti = st.selectbox(
-        "🔻 아래에서 본인의 MBTI를 선택하세요",
-        options=sorted(mbti_books.keys()),
-        index=None,
-        placeholder="MBTI 선택..."
+        "아래에서 유형을 골라주세요 👇",
+        options=["선택해주세요"] + list(mbti_data.keys()),
+        label_visibility="collapsed"
     )
-    
-    st.write("") # 여백 추가
-    
-    if selected_mbti:
-        data = mbti_books[selected_mbti]
-        
-        # 버튼 클릭 없이 선택 즉시 결과 보여주기 (반응형 느낌)
-        st.balloons() # 축하 효과 🎉
-        
-        st.markdown(f"""
-        <div class="book-card">
-            <h2 style='text-align: center; color: #333;'>{data['emoji']} {selected_mbti}를 위한 추천</h2>
-            <hr>
-            <h3 style='text-align: center; color: #2c3e50;'>📖 {data['book']}</h3>
-            <p style='text-align: center; color: #7f8c8d; font-weight: bold;'>- {data['author']} -</p>
-            <br>
-            <p style='text-align: center; font-size: 1.1em;'>{data['desc']}</p>
-            <div class="quote-box">
-                "{data['quote']}"
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
 
-# 6. 푸터 (Footer)
-st.markdown("---")
-st.caption("👨‍🏫 Created by 찬환쌤 | 지구과학 & 융합교육 | AI Education")
+# 6. 결과 출력
+if selected_mbti != "선택해주세요":
+    data = mbti_data[selected_mbti]
+    
+    st.markdown("---")
+    st.markdown(f"### 🧐 분석 결과: **{selected_mbti}**")
+    st.info(data["desc"])
+    
+    st.markdown("#### 🚀 찬환쌤이 추천하는 BEST 진로 3")
+    
+    # 3개의 카드를 병렬로 배치
+    c1, c2, c3 = st.columns(3)
+    
+    with c1:
+        st.success(f"**1순위**\n\n{data['jobs'][0]}")
+    with c2:
+        st.success(f"**2순위**\n\n{data['jobs'][1]}")
+    with c3:
+        st.success(f"**3순위**\n\n{data['jobs'][2]}")
+
+    st.markdown("---")
+    st.caption("🎓 이 결과는 참고용이며, 학생의 흥미와 적성을 고려한 추가 상담이 필요합니다.")
+
+else:
+    # 선택 전 대기 화면
+    st.markdown("---")
+    st.markdown("#### 👋 환영합니다!")
+    st.write("왼쪽(또는 위)의 선택상자에서 학생의 MBTI 유형을 선택하면")
+    st.write("성격 특성과 추천 진로가 마법처럼 나타납니다! ✨")
