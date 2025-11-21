@@ -1,169 +1,111 @@
 import streamlit as st
 
-# 1. 페이지 기본 설정 (탭 제목, 아이콘 등)
+# 1. 페이지 기본 설정 (탭 이름, 아이콘)
 st.set_page_config(
-    page_title="MBTI 진로 나침반",
-    page_icon="🧭",
+    page_title="MBTI 문학 소믈리에",
+    page_icon="📚",
     layout="centered"
 )
 
-# 2. 스타일 꾸미기 (CSS 없이 기본 마크다운 활용)
-# 학생들의 시선을 끌기 위한 헤더 디자인
-st.title("✨ 너의 미래를 찾아봐! MBTI 진로 나침반 🧭")
-st.markdown("### 🏫 찬환쌤과 함께하는 진로 탐색 시간")
-st.markdown("---")
-
-# 3. MBTI 데이터 베이스 (딕셔너리 활용)
-# 별도 DB 없이 파이썬 기본 자료구조로 해결
-mbti_data = {
-    "ISTJ": {
-        "alias": "청렴결백한 논리주의자",
-        "emoji": "🐢",
-        "desc": "책임감이 강하고 매사에 철저하며, 한 번 시작한 일은 끝까지 해내는 끈기가 있어요.",
-        "jobs": ["공무원/행정가 🏛️", "회계사/세무사 📊", "데이터 분석가 💻"]
-    },
-    "ISFJ": {
-        "alias": "용감한 수호자",
-        "emoji": "🛡️",
-        "desc": "차분하고 헌신적이며, 타인의 감정을 잘 살피고 세심하게 배려하는 따뜻한 마음을 가졌어요.",
-        "jobs": ["간호사/의료계열 🏥", "교사/교육자 👩‍🏫", "사회복지사 🤝"]
-    },
-    "INFJ": {
-        "alias": "통찰력 있는 선지자",
-        "emoji": "🧙‍♂️",
-        "desc": "높은 통찰력으로 사람들에게 영감을 주며, 공동의 이익을 중요하게 생각해요.",
-        "jobs": ["심리 상담가 🛋️", "작가/시나리오 작가 ✍️", "UX/UI 디자이너 🎨"]
-    },
-    "INTJ": {
-        "alias": "용의주도한 전략가",
-        "emoji": "♟️",
-        "desc": "상상력이 풍부하고 철두철미한 계획을 세우며, 지적 호기심이 매우 높아요.",
-        "jobs": ["AI 연구원 🤖", "투자 분석가 📈", "과학자/교수 🔬"]
-    },
-    "ISTP": {
-        "alias": "만능 재주꾼",
-        "emoji": "🔧",
-        "desc": "대담하고 현실적이며, 도구 사용에 능숙하고 상황 적응력이 뛰어나요.",
-        "jobs": ["소프트웨어 개발자 🖥️", "파일럿/항공 정비사 ✈️", "응급구조사 🚑"]
-    },
-    "ISFP": {
-        "alias": "호기심 많은 예술가",
-        "emoji": "🎨",
-        "desc": "온화하고 겸손하며, 자신의 감정을 예술적으로 표현하는 것을 좋아해요.",
-        "jobs": ["패션/그래픽 디자이너 👗", "플로리스트 🌿", "작곡가/뮤지션 🎵"]
-    },
-    "INFP": {
-        "alias": "열정적인 중재자",
-        "emoji": "🧚",
-        "desc": "자신의 가치관을 소중히 여기며, 낭만적이고 내적 신념이 깊어요.",
-        "jobs": ["크리에이터/유튜버 📹", "예술 치료사 🎨", "편집자/출판 기획자 📚"]
-    },
-    "INTP": {
-        "alias": "논리적인 사색가",
-        "emoji": "🦉",
-        "desc": "지적 호기심이 많고 잠재력을 파악하는 능력이 뛰어나며, 끊임없이 탐구해요.",
-        "jobs": ["물리학자/천문학자 🌌", "블록체인 개발자 🔗", "경제학 연구원 📉"]
-    },
-    "ESTP": {
-        "alias": "모험을 즐기는 사업가",
-        "emoji": "🚀",
-        "desc": "위험을 감수하는 것을 두려워하지 않고, 에너지가 넘치며 직관력이 뛰어나요.",
-        "jobs": ["스포츠 에이전트 ⚽", "창업가/CEO 🏢", "펀드 매니저 💰"]
-    },
-    "ESFP": {
-        "alias": "자유로운 영혼의 연예인",
-        "emoji": "🎉",
-        "desc": "주변 사람들을 즐겁게 해주며, 사교적이고 활동적인 에너지가 넘쳐요.",
-        "jobs": ["이벤트 기획자 🎈", "배우/엔터테이너 🎭", "여행 가이드 ✈️"]
-    },
-    "ENFP": {
-        "alias": "재기발랄한 활동가",
-        "emoji": "✨",
-        "desc": "창의적이고 열정적이며, 사람들과 어울리는 것을 좋아하고 긍정적인 에너지를 줘요.",
-        "jobs": ["홍보/마케터 📢", "방송 PD 🎬", "진로 상담 교사 🏫"]
-    },
-    "ENTP": {
-        "alias": "뜨거운 논쟁을 즐기는 변론가",
-        "emoji": "🗣️",
-        "desc": "지적인 도전을 두려워하지 않고, 다방면에 관심이 많으며 독창적이에요.",
-        "jobs": ["변호사/법조인 ⚖️", "벤처 투자자 💸", "정치 평론가 🎙️"]
-    },
-    "ESTJ": {
-        "alias": "엄격한 관리자",
-        "emoji": "⚖️",
-        "desc": "사물과 사람을 관리하는 데 뛰어난 능력이 있으며, 규칙과 절차를 중요시해요.",
-        "jobs": ["경찰/군 장교 👮", "금융 자산 관리사 💵", "학교 행정가 🏫"]
-    },
-    "ESFJ": {
-        "alias": "사교적인 외교관",
-        "emoji": "🤝",
-        "desc": "타인을 돕는 것을 즐기며, 인기가 많고 사교적인 성격으로 모임을 주도해요.",
-        "jobs": ["승무원 🛫", "호텔리어 🛎️", "초등 교사 🐥"]
-    },
-    "ENFJ": {
-        "alias": "정의로운 사회운동가",
-        "emoji": "🌟",
-        "desc": "카리스마와 충만한 열정을 지닌 타고난 리더형으로, 사람들을 이끄는 데 능숙해요.",
-        "jobs": ["아나운서/기자 🎤", "NGO 활동가 🌍", "인사 담당자(HR) 📋"]
-    },
-    "ENTJ": {
-        "alias": "대담한 통솔자",
-        "emoji": "🦁",
-        "desc": "대담하고 상상력이 풍부하며, 강력한 리더십으로 목표를 성취해내요.",
-        "jobs": ["경영 컨설턴트 👔", "프로젝트 매니저 📅", "고위 공무원 🏛️"]
+# 2. CSS 스타일링 (타이틀 폰트 및 여백 조정)
+st.markdown("""
+    <style>
+    .main-header {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #4A4A4A;
+        text-align: center;
+        margin-bottom: 1rem;
     }
+    .sub-text {
+        font-size: 1.1rem;
+        color: #666;
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+    .book-card {
+        background-color: #f9f9f9;
+        padding: 20px;
+        border-radius: 15px;
+        border-left: 5px solid #FF6B6B;
+        box-shadow: 2px 2px 10px rgba(0,0,0,0.1);
+    }
+    .quote-box {
+        font-style: italic;
+        color: #2C3E50;
+        background-color: #E8F6F3;
+        padding: 15px;
+        border-radius: 10px;
+        margin-top: 10px;
+        text-align: center;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+# 3. 데이터 (MBTI별 추천 도서 매핑)
+mbti_books = {
+    # 분석가형 (INTJ, INTP, ENTJ, ENTP)
+    "INTJ": {"book": "1984", "author": "조지 오웰", "emoji": "👁️", "desc": "치밀한 전략가인 당신에게, 시스템과 통제에 대한 날카로운 통찰을 주는 책.", "quote": "자유란 2 더하기 2가 4라고 말할 수 있는 자유이다."},
+    "INTP": {"book": "월든", "author": "헨리 데이비드 소로", "emoji": "🌿", "desc": "사색과 논리를 사랑하는 당신, 숲속에서의 고독과 철학적 사유를 즐겨보세요.", "quote": "내가 숲으로 들어간 것은 인생을 의도적으로 살아보기 위해서였다."},
+    "ENTJ": {"book": "군주론", "author": "마키아벨리", "emoji": "👑", "desc": "대담한 통솔자인 당신에게, 리더십의 본질과 현실적인 권력을 다룬 고전.", "quote": "사랑받는 것보다 두려움의 대상이 되는 것이 훨씬 안전하다."},
+    "ENTP": {"book": "돈키호테", "author": "세르반테스", "emoji": "⚔️", "desc": "뜨거운 논쟁과 모험을 즐기는 당신, 현실에 안주하지 않는 기사의 열정을 만나보세요.", "quote": "이룩할 수 없는 꿈을 꾸고, 이루어질 수 없는 사랑을 하고..."},
+
+    # 외교관형 (INFJ, INFP, ENFJ, ENFP)
+    "INFJ": {"book": "데미안", "author": "헤르만 헤세", "emoji": "🐣", "desc": "깊은 통찰력을 지닌 당신, 내면의 자아를 찾아가는 치열한 여정에 공감할 거예요.", "quote": "새는 알을 깨고 나오려 투쟁한다. 알은 세계이다."},
+    "INFP": {"book": "어린 왕자", "author": "생텍쥐페리", "emoji": "🦊", "desc": "이상주의적이고 낭만적인 당신에게, 보이지 않는 것의 소중함을 일깨워주는 책.", "quote": "가장 중요한 것은 눈에 보이지 않아."},
+    "ENFJ": {"book": "레 미제라블", "author": "빅토르 위고", "emoji": "🇫🇷", "desc": "정의롭고 이타적인 당신, 인간에 대한 뜨거운 사랑과 혁명의 서사를 추천합니다.", "quote": "사랑하는 것은 신의 얼굴을 보는 것이다."},
+    "ENFP": {"book": "빨강 머리 앤", "author": "루시 모드 몽고메리", "emoji": "👒", "desc": "재기발랄한 활동가인 당신! 긍정과 상상력으로 세상을 물들이는 앤과 찰떡궁합.", "quote": "세상은 생각대로 되지 않는다고요? 하지만 생각대로 되지 않는다는 건 정말 멋져요!"},
+
+    # 관리자형 (ISTJ, ISFJ, ESTJ, ESFJ)
+    "ISTJ": {"book": "오만과 편견", "author": "제인 오스틴", "emoji": "📜", "desc": "사실과 원칙을 중시하는 당신, 섬세한 감정선과 이성적 판단 사이의 균형을 느껴보세요.", "quote": "편견은 내가 다른 사람을 사랑하지 못하게 하고, 오만은 다른 사람이 나를 사랑할 수 없게 만든다."},
+    "ISFJ": {"book": "작은 아씨들", "author": "루이자 메이 올콧", "emoji": "🧶", "desc": "성실하고 따뜻한 수호자인 당신에게 가족애와 성장의 따스함을 선물합니다.", "quote": "우리의 짐은 우리가 짊어질 수 있도록 만들어졌다."},
+    "ESTJ": {"book": "동물농장", "author": "조지 오웰", "emoji": "🐷", "desc": "엄격한 관리자인 당신, 조직과 사회의 규율이 어떻게 변질될 수 있는지 꿰뚫어보세요.", "quote": "모든 동물은 평등하다. 하지만 어떤 동물은 다른 동물보다 더욱 평등하다."},
+    "ESFJ": {"book": "위대한 개츠비", "author": "F. 스콧 피츠제럴드", "emoji": "🥂", "desc": "사교적이고 헌신적인 당신, 화려함 속에 감춰진 인간의 고독과 사랑을 만나보세요.", "quote": "우리는 조류를 거스르는 배처럼 끊임없이 과거로 떠밀려 가면서도 앞으로 나아가는 것이다."},
+
+    # 탐험가형 (ISTP, ISFP, ESTP, ESFP)
+    "ISTP": {"book": "노인과 바다", "author": "어니스트 헤밍웨이", "emoji": "🦈", "desc": "만능 재주꾼인 당신, 군더더기 없는 문체와 묵묵한 사투가 주는 강렬함을 느껴보세요.", "quote": "인간은 파괴될 수는 있어도 패배할 수는 없다."},
+    "ISFP": {"book": "달과 6펜스", "author": "서머싯 몸", "emoji": "🎨", "desc": "예술적 감각이 넘치는 당신, 현실(6펜스)을 버리고 꿈(달)을 쫓는 열망에 빠져보세요.", "quote": "나는 그림을 그려야 한다지 않소. 물에 빠지면 헤엄을 잘 치고 못 치고가 문제가 아니오."},
+    "ESTP": {"book": "로빈슨 크루소", "author": "대니얼 디포", "emoji": "🏝️", "desc": "모험을 즐기는 사업가인 당신! 어떤 상황에서도 살아남는 현실적 해결 능력을 확인해보세요.", "quote": "두려움은 위험 그 자체보다도 1만 배는 더 무서운 것이다."},
+    "ESFP": {"book": "톰 소여의 모험", "author": "마크 트웨인", "emoji": "🛶", "desc": "자유로운 영혼의 연예인인 당신에게, 규율에 얽매이지 않는 유쾌한 모험을 추천합니다.", "quote": "일을 놀이처럼 하면 인생은 끝없는 즐거움이 된다."}
 }
 
-# 4. 사용자 입력 받기 (사이드바 활용)
-with st.sidebar:
-    st.header("🔎 학생 정보 입력")
-    st.write("자신의 MBTI 유형을 선택해주세요.")
-    
-    # MBTI 선택 박스
+# 4. 메인 화면 구성
+st.markdown('<div class="main-header">📚 MBTI 문학 소믈리에</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-text">찬환쌤과 함께하는 나만의 고전 찾기! 당신의 성향을 선택해주세요.</div>', unsafe_allow_html=True)
+
+# 5. 사용자 입력 (Selectbox)
+col1, col2, col3 = st.columns([1, 2, 1]) # 중앙 정렬을 위한 컬럼 분할
+
+with col2:
     selected_mbti = st.selectbox(
-        "당신의 MBTI는 무엇인가요?",
-        list(mbti_data.keys()),
-        index=0
+        "🔻 아래에서 본인의 MBTI를 선택하세요",
+        options=sorted(mbti_books.keys()),
+        index=None,
+        placeholder="MBTI 선택..."
     )
     
-    st.write("---")
-    st.caption("👨‍🏫 Created by 찬환쌤")
-    st.caption("🚀 꿈을 향해 퀀텀 점프!")
-
-# 5. 메인 화면 결과 출력 로직
-if selected_mbti:
-    data = mbti_data[selected_mbti]
-    
-    # 5-1. MBTI 유형 소개 섹션
-    st.subheader(f"{data['emoji']} {selected_mbti}")
-    st.markdown(f"**'{data['alias']}'** 유형이시군요!")
-    
-    # 박스 형태로 설명 출력 (info 박스 활용)
-    st.info(data['desc'])
-
-    st.markdown("---")
-    st.markdown("### 🎯 찬환쌤이 추천하는 BEST 3 진로")
-    st.write("당신의 성향에 딱 맞는 미래 직업을 확인해보세요!")
     st.write("") # 여백 추가
-
-    # 5-2. 추천 직업 카드 섹션 (컬럼 3개로 분할하여 멋지게 배치)
-    col1, col2, col3 = st.columns(3)
-
-    # 카드 스타일로 보여주기 위해 metric 사용 (깔끔함)
-    with col1:
-        st.container(border=True).markdown(f"#### 🥇 1순위\n\n**{data['jobs'][0]}**")
     
-    with col2:
-        st.container(border=True).markdown(f"#### 🥈 2순위\n\n**{data['jobs'][1]}**")
+    if selected_mbti:
+        data = mbti_books[selected_mbti]
+        
+        # 버튼 클릭 없이 선택 즉시 결과 보여주기 (반응형 느낌)
+        st.balloons() # 축하 효과 🎉
+        
+        st.markdown(f"""
+        <div class="book-card">
+            <h2 style='text-align: center; color: #333;'>{data['emoji']} {selected_mbti}를 위한 추천</h2>
+            <hr>
+            <h3 style='text-align: center; color: #2c3e50;'>📖 {data['book']}</h3>
+            <p style='text-align: center; color: #7f8c8d; font-weight: bold;'>- {data['author']} -</p>
+            <br>
+            <p style='text-align: center; font-size: 1.1em;'>{data['desc']}</p>
+            <div class="quote-box">
+                "{data['quote']}"
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
-    with col3:
-        st.container(border=True).markdown(f"#### 🥉 3순위\n\n**{data['jobs'][2]}**")
-
-    # 5-3. 격려 메시지 및 효과
-    st.write("")
-    st.write("")
-    
-    # 버튼을 누르면 축하 효과 터뜨리기
-    if st.button("🚀 나의 미래 응원받기"):
-        st.balloons()
-        st.success(f"{selected_mbti} 친구의 멋진 미래를 찬환쌤이 항상 응원한다! 파이팅!")
+# 6. 푸터 (Footer)
+st.markdown("---")
+st.caption("👨‍🏫 Created by 찬환쌤 | 지구과학 & 융합교육 | AI Education")
